@@ -13,30 +13,32 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) =
   const handleWhatsAppShare = async () => {
     if (!resultUrl) return;
 
-    // Check if we can share files natively (Mobile/Supported browsers)
-    if (navigator.share) {
+    // 1. Try Native Sharing (Best for Mobile)
+    if (navigator.share && navigator.canShare) {
       try {
         const response = await fetch(resultUrl);
         const blob = await response.blob();
         const file = new File([blob], 'ceo-cartoon.png', { type: 'image/png' });
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        if (navigator.canShare({ files: [file] })) {
              await navigator.share({
-                title: 'My CEO Cartoon',
-                text: 'Created with CEO Cartoonizer! #AI #Business #CEO',
                 files: [file],
+                // Some apps ignore text when sharing files, but we include it just in case
              });
              return;
         }
       } catch (error) {
-        console.log('Native file share failed, falling back to text', error);
+        console.log('Native file share failed/cancelled, falling back...', error);
       }
     }
 
-    // Fallback for Desktop: Open WhatsApp Web with a text message
-    const text = encodeURIComponent("I just created my CEO Persona! You should try it.");
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-    alert("On desktop, please download the image first and then attach it in WhatsApp.");
+    // 2. Fallback: Open WhatsApp Web (Best for Desktop)
+    // Note: We cannot attach the image programmatically via URL on WhatsApp Web.
+    // We just open the chat and ask user to drag/drop or paste.
+    const text = "Check out my new CEO Persona!";
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+    alert("Opening WhatsApp... Please save the image and attach it to your message manually.");
   };
 
   if (status === AppStatus.IDLE) {
