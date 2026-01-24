@@ -3,6 +3,7 @@ export interface CartoonRequest {
   gender: string;
   businessName: string;
   businessType: string;
+  style: string;
 }
 
 export interface ImageFile {

@@ -4,12 +4,15 @@ import { CartoonRequest, ImageFile, AppSettings, AspectRatio } from "../types";
 // Helper to construct the prompt
 const buildPrompt = (request: CartoonRequest) => {
   const genderTerm = request.gender ? `${request.gender} ` : '';
+  const styleTerm = request.style ? `Concept/Vibe: ${request.style}.` : '';
   
   // Strict facial fidelity instructions as requested
   return `Use the attached selfie image and recreate it exactly as it is. Do NOT alter any facial features, expressions, skin tone, hairstyle, or face shape. The face must be identical to the selfie. You may change the background, clothing, accessories, and environment as described:
 
 Create a high-quality, semi-realistic 3D illustration of a confident ${genderTerm}business owner / CEO named ${request.personName}, standing professionally near their business ${request.businessName}, which is a ${request.businessType}. 
   
+${styleTerm}
+
 Pose & Posture: The person is upright with a confident, leadership posture. Hands can be relaxed at sides or lightly crossed. Convey a successful entrepreneur vibe. 
 Positioning: IMPORTANT - The person must stand slightly to the side so they do NOT block the business signboard. The business name "${request.businessName}" on the sign must be fully visible and readable.
 Appearance & Outfit: Well-groomed, smart casual or professional business attire suitable for a CEO. No phone or other distracting props. 

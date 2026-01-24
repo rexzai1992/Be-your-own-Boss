@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, RefreshCw, MessageCircle } from 'lucide-react';
+import { Download, RefreshCw, ArrowRight } from 'lucide-react';
 import { AppStatus } from '../types';
 
 interface ResultCardProps {
@@ -10,36 +10,8 @@ interface ResultCardProps {
 
 const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) => {
   
-  const handleWhatsAppShare = async () => {
-    if (!resultUrl) return;
-
-    // 1. Try Native Sharing (Best for Mobile)
-    if (navigator.share && navigator.canShare) {
-      try {
-        const response = await fetch(resultUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'ceo-cartoon.png', { type: 'image/png' });
-
-        if (navigator.canShare({ files: [file] })) {
-             await navigator.share({
-                files: [file],
-                // Some apps ignore text when sharing files, but we include it just in case
-             });
-             return;
-        }
-      } catch (error) {
-        console.log('Native file share failed/cancelled, falling back...', error);
-      }
-    }
-
-    // 2. Fallback: Open WhatsApp Web (Best for Desktop)
-    // Note: We cannot attach the image programmatically via URL on WhatsApp Web.
-    // We just open the chat and ask user to drag/drop or paste.
-    const text = "Check out my new CEO Persona!";
-    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank');
-    alert("Opening WhatsApp... Please save the image and attach it to your message manually.");
-  };
+  const PROMO_URL = "https://aigenius.com.my";
+  const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=svg&data=${encodeURIComponent(PROMO_URL)}`;
 
   if (status === AppStatus.IDLE) {
     return (
@@ -105,49 +77,63 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) =
       </div>
       
       {/* Right Column: Actions */}
-      <div className="flex-[2] bg-white p-6 lg:p-10 flex flex-col justify-between border-l border-gray-100 relative">
+      <div className="flex-[2] bg-white p-6 lg:p-10 flex flex-col border-l border-gray-100 relative overflow-y-auto">
         
-        <div>
+        <div className="mb-6">
           <div className="flex items-center gap-2 mb-3 text-green-600 font-bold uppercase tracking-wider text-xs">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Generation Complete
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 mb-3 leading-tight">Your CEO Persona</h2>
           <p className="text-gray-500">
-            Share your new look with your network.
+            Download your new look or start your business journey.
           </p>
         </div>
 
-        {/* Primary Actions */}
-        <div className="space-y-4">
-           
-           <button 
-             onClick={handleWhatsAppShare}
-             className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-[#25D366] text-white font-bold text-xl rounded-2xl hover:bg-[#20bd5a] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
-           >
-             <MessageCircle size={24} className="fill-current" />
-             Share on WhatsApp
-           </button>
-
-           <div className="h-px bg-gray-100 my-4" />
-
-           <div className="grid grid-cols-2 gap-4">
+        {/* Primary Actions (Save) */}
+        <div className="space-y-3 mb-8">
+           <div className="grid grid-cols-[1fr_auto] gap-3">
             <a
               href={resultUrl || '#'}
               download="ceo-cartoon.png"
-              className="flex items-center justify-center gap-2 px-4 py-4 bg-gray-900 text-white font-bold text-lg rounded-xl hover:bg-black transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="flex items-center justify-center gap-2 px-4 py-4 bg-gray-900 text-white font-bold text-lg rounded-xl hover:bg-black transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
             >
               <Download size={20} />
-              Save
+              Save Image
             </a>
             
             <button
               onClick={onReset}
-              className="flex items-center justify-center gap-2 px-4 py-4 bg-white border-2 border-gray-200 text-gray-600 font-bold text-lg rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              className="px-5 py-4 bg-white border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+              title="Create New"
             >
-              <RefreshCw size={20} />
-              New
+              <RefreshCw size={24} />
             </button>
+           </div>
+        </div>
+
+        {/* CTA Section - "At last" */}
+        <div className="mt-auto pt-8 border-t border-gray-100">
+           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 text-center border border-blue-100">
+              <h3 className="text-gray-900 font-bold text-xl mb-2">Turn This Into Reality?</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Scan to download your picture and register your store on AiGenius.
+              </p>
+              
+              <div className="flex justify-center mb-5">
+                 <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+                    <img src={QR_CODE_URL} alt="Scan to Launch" className="w-32 h-32 mix-blend-multiply" />
+                 </div>
+              </div>
+              
+              <a 
+                href={PROMO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 animate-pulse-slow"
+              >
+                Launch Your Business Now <ArrowRight size={20} />
+              </a>
            </div>
         </div>
 
