@@ -14,8 +14,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             <Briefcase size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-none">CEO Cartoonizer</h1>
-            <p className="text-xs text-gray-500 font-medium">Powered by Gemini 2.5</p>
+            <h1 className="text-xl font-bold text-gray-900 leading-none">CEO Maker</h1>
+            <p className="text-xs text-gray-500 font-medium">Powered by Ai Genius</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

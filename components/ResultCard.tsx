@@ -1,27 +1,41 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText } from 'lucide-react';
-import { AppStatus, AppSettings } from '../types';
+import { AppStatus, AppSettings, CartoonRequest } from '../types';
+import VirtualKeyboard from './VirtualKeyboard';
 
 interface ResultCardProps {
   status: AppStatus;
   resultUrl: string | null;
   onReset: () => void;
   settings: AppSettings;
+  request: CartoonRequest;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, settings }) => {
+const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, settings, request }) => {
   const PROMO_URL = "https://aigenius.com.my";
   const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=svg&data=${encodeURIComponent(PROMO_URL)}`;
   const PROXY_URL = "https://corsproxy.io/?";
 
   const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
-  // Use message from settings, fallback to a sensible default if somehow missing
-  const [whatsappMessage, setWhatsappMessage] = useState(
-    settings.whatsappMessageTemplate || 
-    `Hello! Here is your generated CEO Cartoon. You can view your result and start your business journey at ${PROMO_URL}. Thank you!`
-  );
+  // Initialize message with variable replacement
+  const [whatsappMessage] = useState(() => {
+    let msg = settings.whatsappMessageTemplate || 
+      `Hello! Here is your generated CEO Cartoon. You can view your result and start your business journey at ${PROMO_URL}. Thank you!`;
+    
+    // Replace variables
+    if (request) {
+        msg = msg.replace(/{{personName}}/g, request.personName || '')
+                 .replace(/{{gender}}/g, request.gender || '')
+                 .replace(/{{businessName}}/g, request.businessName || '')
+                 .replace(/{{businessType}}/g, request.businessType || '')
+                 .replace(/{{style}}/g, request.style || '');
+    }
+    return msg;
+  });
   
   const [sending, setSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -68,6 +82,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
 
     setSending(true);
     setStatusMessage("Preparing...");
+    setIsKeyboardOpen(false);
 
     try {
         let finalImageUrl = resultUrl;
@@ -141,6 +156,12 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
     }
   };
 
+  const openWhatsAppModal = () => {
+      setShowPhoneInput(true);
+      // Automatically open keyboard slightly after modal opens
+      setTimeout(() => setIsKeyboardOpen(true), 100);
+  };
+
   if (status === AppStatus.IDLE) {
     return (
       <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center text-gray-400">
@@ -190,73 +211,78 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
   }
 
   return (
-    <div className="relative flex flex-col lg:flex-row bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-2xl animate-fade-in min-h-[700px]">
-      
-      {/* Phone Number Modal Overlay */}
-      {showPhoneInput && (
-        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
-               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-                   <h3 className="font-bold text-gray-800">Send to WhatsApp</h3>
-                   <button onClick={() => setShowPhoneInput(false)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
-                       <X size={20} />
+    <>
+    {/* Phone Number Modal - Rendered via Portal to be on top of everything */}
+    {showPhoneInput && createPortal(
+        <div className="fixed inset-0 z-[90] bg-black/90 backdrop-blur-md flex items-start justify-center pt-20 p-4 animate-fade-in">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0 bg-gray-50/50">
+                   <div className="flex items-center gap-2">
+                      <div className="bg-[#25D366] p-1.5 rounded-full text-white">
+                        <MessageCircle size={16} />
+                      </div>
+                      <h3 className="font-bold text-gray-800">Send to WhatsApp</h3>
+                   </div>
+                   <button onClick={() => setShowPhoneInput(false)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+                       <X size={24} />
                    </button>
                </div>
                
-               <div className="p-6 overflow-y-auto">
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Recipient Phone Number</label>
-                   <div className="relative mb-5">
+               <div className="p-6">
+                   <label className="block text-sm font-bold text-gray-700 mb-2">Recipient Phone Number</label>
+                   <div className="relative mb-2">
                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                           <Phone size={18} className="text-gray-400" />
+                           <Phone size={20} className="text-gray-400" />
                        </div>
                        <input 
                          type="tel" 
                          value={phoneNumber}
-                         onChange={(e) => setPhoneNumber(e.target.value)}
+                         readOnly
+                         onFocus={() => setIsKeyboardOpen(true)}
                          placeholder="e.g. 60123456789"
-                         autoFocus
-                         className="block w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-green-500 focus:border-green-500 transition-colors"
-                       />
-                       <p className="text-xs text-gray-400 mt-1.5">
-                          Must include country code (e.g. 60 for Malaysia).
-                       </p>
-                   </div>
-                   
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Message Caption</label>
-                   <div className="relative mb-6">
-                       <div className="absolute top-3 left-3 pointer-events-none text-gray-400">
-                           <FileText size={18} />
-                       </div>
-                       <textarea 
-                         value={whatsappMessage}
-                         onChange={(e) => setWhatsappMessage(e.target.value)}
-                         className="block w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-green-500 focus:border-green-500 transition-colors text-sm min-h-[100px] resize-none"
-                         placeholder="Enter your message..."
+                         className="block w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-[#25D366] focus:border-[#25D366] transition-colors text-xl font-medium tracking-wide bg-gray-50 cursor-pointer"
                        />
                    </div>
+                   <p className="text-xs text-gray-500 mb-6">
+                      * Must include country code (e.g. 60 for Malaysia).
+                   </p>
                    
                    <button 
                      onClick={handleSendWhatsApp}
                      disabled={sending || !phoneNumber}
-                     className="w-full py-3 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#20bd5a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                     className="w-full py-4 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#20bd5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5"
                    >
                      {sending ? (
                          <>
-                           <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                           <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
                            {statusMessage || 'Sending...'}
                          </>
                      ) : (
                          <>
-                           <Send size={18} />
-                           Send Message
+                           <Send size={20} />
+                           Send Now
                          </>
                      )}
                    </button>
                </div>
            </div>
-        </div>
-      )}
 
+           {/* Numeric Keyboard Portal */}
+           <VirtualKeyboard 
+             isVisible={isKeyboardOpen}
+             mode="numeric"
+             value={phoneNumber}
+             onChange={setPhoneNumber}
+             onClose={() => setIsKeyboardOpen(false)}
+             onEnter={handleSendWhatsApp}
+             title="Enter Phone Number"
+           />
+        </div>,
+        document.body
+    )}
+
+    <div className="relative flex flex-col lg:flex-row bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-2xl animate-fade-in min-h-[700px]">
+      
       {/* Left Column: Image Preview */}
       <div className="flex-[3] bg-gray-900 relative flex items-center justify-center p-4 lg:p-8 overflow-hidden group">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20" />
@@ -287,7 +313,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
         <div className="space-y-3 mb-8">
            
            <button 
-             onClick={() => setShowPhoneInput(true)}
+             onClick={openWhatsAppModal}
              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white font-bold text-lg rounded-xl hover:bg-[#20bd5a] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
            >
              <MessageCircle size={24} className="fill-current" />
@@ -341,6 +367,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
 
       </div>
     </div>
+    </>
   );
 };
 

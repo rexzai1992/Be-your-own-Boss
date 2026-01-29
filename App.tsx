@@ -441,7 +441,7 @@ function App() {
             </div>
           </div>
         );
-      case 5: // Photo Input
+      case 5: // Photo Input & Generate
         return (
           <div className="space-y-6 animate-fade-in-up">
              <div>
@@ -458,42 +458,11 @@ function App() {
                 Back
               </button>
               <button
-                onClick={() => handleNext()}
-                disabled={!image}
-                className="flex-1 flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
-              >
-                 Next <ArrowRight size={20} />
-              </button>
-            </div>
-          </div>
-        );
-      case 6: // Generate Confirmation
-        return (
-          <div className="space-y-8 animate-fade-in-up text-center pt-8">
-             <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-full w-32 h-32 mx-auto flex items-center justify-center mb-4">
-               <Sparkles className="w-16 h-16 text-blue-600 animate-pulse" />
-             </div>
-             
-             <div>
-               <h3 className="text-3xl font-extrabold text-gray-900 mb-2">Your Masterpiece Awaits</h3>
-               <p className="text-gray-500 text-lg">
-                 We are ready to create your CEO persona.
-               </p>
-             </div>
-             
-             <div className="flex gap-3 pt-4">
-              <button
-                onClick={handleBack}
-                className="px-6 py-4 border-2 border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50 transition-colors"
-              >
-                Back
-              </button>
-              <button
                 onClick={handleSubmit}
-                disabled={status === AppStatus.GENERATING}
+                disabled={!image || status === AppStatus.GENERATING}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform
-                  ${status === AppStatus.GENERATING 
-                    ? 'bg-blue-800 text-white cursor-not-allowed shadow-none' 
+                  ${(!image || status === AppStatus.GENERATING)
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' 
                     : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl hover:-translate-y-0.5'
                   }`}
               >
@@ -553,7 +522,13 @@ function App() {
             // WIDENED CONTAINER FOR SPLIT RESULT VIEW
             <div className="max-w-6xl mx-auto animate-fade-in">
                 {/* Result View - Full Page */}
-                <ResultCard status={status} resultUrl={resultUrl} onReset={handleReset} settings={settings} />
+                <ResultCard 
+                  status={status} 
+                  resultUrl={resultUrl} 
+                  onReset={handleReset} 
+                  settings={settings} 
+                  request={formData}
+                />
             </div>
           ) : (
              <div className="max-w-2xl mx-auto">
@@ -562,7 +537,7 @@ function App() {
                   <div>
                      {/* Progress Indicator */}
                      <div className="flex items-center gap-1.5 mb-8">
-                        {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                        {[0, 1, 2, 3, 4, 5].map(i => (
                           <div 
                             key={i} 
                             className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? 'bg-blue-600' : 'bg-gray-200'}`}

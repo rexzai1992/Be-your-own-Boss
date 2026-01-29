@@ -8,6 +8,7 @@ interface VirtualKeyboardProps {
   onClose: () => void;
   onEnter: () => void;
   title?: string;
+  mode?: 'full' | 'numeric';
 }
 
 const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ 
@@ -16,7 +17,8 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   onChange, 
   onClose, 
   onEnter,
-  title 
+  title,
+  mode = 'full'
 }) => {
   if (!isVisible) return null;
 
@@ -38,6 +40,46 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   const handleSpace = () => {
     onChange(value + ' ');
   };
+
+  if (mode === 'numeric') {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 pb-8 z-[100] shadow-2xl rounded-t-2xl animate-slide-up select-none touch-none">
+        <div className="flex items-center justify-between px-4 py-2 mb-4 border-b border-gray-700">
+          <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">{title || 'Input'}</span>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-800 transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="max-w-md mx-auto grid grid-cols-3 gap-3">
+           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+               <button key={num} onClick={() => handleKeyPress(num.toString())} className="h-14 rounded-xl bg-gray-700 text-2xl font-bold hover:bg-gray-600 active:bg-blue-600 transition-colors shadow-sm">
+                  {num}
+               </button>
+           ))}
+           <button onClick={onClose} className="h-14 rounded-xl bg-gray-800 text-gray-400 font-bold hover:bg-gray-700 text-sm">
+              CANCEL
+           </button>
+           <button onClick={() => handleKeyPress('0')} className="h-14 rounded-xl bg-gray-700 text-2xl font-bold hover:bg-gray-600 active:bg-blue-600 transition-colors shadow-sm">
+              0
+           </button>
+           <button onClick={handleBackspace} className="h-14 rounded-xl bg-gray-800 text-white flex items-center justify-center hover:bg-red-900/50 active:bg-red-900 transition-colors">
+              <Delete size={24} />
+           </button>
+        </div>
+        
+         <div className="max-w-md mx-auto mt-4">
+           <button
+              onClick={onEnter}
+              className="w-full h-14 rounded-xl bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-bold text-xl flex items-center justify-center gap-2 transition-colors shadow-lg"
+            >
+              <span>Send WhatsApp</span>
+              <Check size={20} />
+            </button>
+         </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-2 pb-6 z-[60] shadow-2xl rounded-t-2xl animate-slide-up select-none touch-none">

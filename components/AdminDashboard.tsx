@@ -265,6 +265,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, settin
                             className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm min-h-[80px]"
                             placeholder="Hello! Here is your generated CEO Cartoon..."
                           />
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            Variables: <span className="font-mono text-blue-600">{'{{personName}}'}</span>, <span className="font-mono text-blue-600">{'{{businessName}}'}</span>, <span className="font-mono text-blue-600">{'{{businessType}}'}</span>, <span className="font-mono text-blue-600">{'{{style}}'}</span>
+                          </p>
                         </div>
                     </div>
                 </div>
