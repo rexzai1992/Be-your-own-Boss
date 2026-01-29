@@ -1,25 +1,32 @@
 import { GoogleGenAI } from "@google/genai";
 import { CartoonRequest, ImageFile, AppSettings, AspectRatio } from "../types";
 
-// Helper to construct the prompt
-const buildPrompt = (request: CartoonRequest) => {
-  const genderTerm = request.gender ? `${request.gender} ` : '';
-  const styleTerm = request.style ? `Concept/Vibe: ${request.style}.` : '';
-  
-  // Strict facial fidelity instructions as requested
-  return `Use the attached selfie image and recreate it exactly as it is. Do NOT alter any facial features, expressions, skin tone, hairstyle, or face shape. The face must be identical to the selfie. You may change the background, clothing, accessories, and environment as described:
+export const DEFAULT_PROMPT_TEMPLATE = `Use the attached selfie image and recreate it exactly as it is. Do NOT alter any facial features, expressions, skin tone, hairstyle, or face shape. The face must be identical to the selfie. You may change the background, clothing, accessories, and environment as described:
 
-Create a high-quality, semi-realistic 3D illustration of a confident ${genderTerm}business owner / CEO named ${request.personName}, standing professionally near their business ${request.businessName}, which is a ${request.businessType}. 
+Create a high-quality, semi-realistic 3D illustration of a confident {{gender}} business owner / CEO named {{personName}}, standing professionally near their business {{businessName}}, which is a {{businessType}}. 
   
-${styleTerm}
+Concept/Vibe: {{style}}.
 
 Pose & Posture: The person is upright with a confident, leadership posture. Hands can be relaxed at sides or lightly crossed. Convey a successful entrepreneur vibe. 
-Positioning: IMPORTANT - The person must stand slightly to the side so they do NOT block the business signboard. The business name "${request.businessName}" on the sign must be fully visible and readable.
+Positioning: IMPORTANT - The person must stand slightly to the side so they do NOT block the business signboard. The business name "{{businessName}}" on the sign must be fully visible and readable.
 Appearance & Outfit: Well-groomed, smart casual or professional business attire suitable for a CEO. No phone or other distracting props. 
 Background & Environment: Modern, clean, and welcoming storefront or business workspace. Bright, balanced lighting, realistic commercial area feel. 
 Art Style: High-end 3D animated movie style with realistic textures, lighting, and materials. A blend of stylized character design with realistic rendering. Sharp focus, high detail, vibrant yet professional colors. Professional, premium branding aesthetic. 
 
 Maintain photorealistic quality, natural lighting, and high detail. The face must remain 100% accurate and recognizable.`;
+
+// Helper to construct the prompt from template
+const buildPrompt = (request: CartoonRequest, template: string) => {
+  let prompt = template || DEFAULT_PROMPT_TEMPLATE;
+  
+  // Replace variables
+  prompt = prompt.replace(/{{personName}}/g, request.personName || '');
+  prompt = prompt.replace(/{{gender}}/g, request.gender || '');
+  prompt = prompt.replace(/{{businessName}}/g, request.businessName || '');
+  prompt = prompt.replace(/{{businessType}}/g, request.businessType || '');
+  prompt = prompt.replace(/{{style}}/g, request.style || '');
+  
+  return prompt;
 };
 
 // Helper to map 1:1, 16:9 etc to OpenAI resolutions
@@ -67,16 +74,18 @@ const generateWithGemini = async (
 
   const ai = new GoogleGenAI({ apiKey });
   const modelName = settings.model || 'gemini-2.5-flash-image';
-  
-  // Gemini image models usually support these standard aspect ratios
   const aspectRatio = settings.aspectRatio || "1:1";
+  
+  // Use custom template or fallback
+  const promptTemplate = settings.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+  const prompt = buildPrompt(request, promptTemplate);
 
   try {
     const response = await ai.models.generateContent({
       model: modelName,
       contents: {
         parts: [
-          { text: buildPrompt(request) },
+          { text: prompt },
           {
             inlineData: {
               data: referenceImage.base64,
@@ -121,9 +130,11 @@ const generateWithOpenAI = async (
   const apiKey = settings.apiKey;
   if (!apiKey) throw new Error("API Key is required for OpenAI");
 
+  const promptTemplate = settings.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+  const basePrompt = buildPrompt(request, promptTemplate);
   // OpenAI DALL-E 3 does not support image-to-image variations in the same way.
   // We strictly use text-to-image here.
-  const prompt = buildPrompt(request) + " Note: Generate a generic character matching the description as no reference image can be used in this mode.";
+  const prompt = basePrompt + " Note: Generate a generic character matching the description as no reference image can be used in this mode.";
   
   const size = getOpenAIResolution(settings.aspectRatio);
 
@@ -163,6 +174,9 @@ const generateWithReplicate = async (
   const model = settings.model || "black-forest-labs/flux-schnell";
   const aspectRatio = settings.aspectRatio || "1:1";
   const useProxy = settings.useCorsProxy ?? true; // Default to true if undefined
+  
+  const promptTemplate = settings.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+  const prompt = buildPrompt(request, promptTemplate);
 
   // 1. Create Prediction
   const startResponse = await fetchWithProxy("https://api.replicate.com/v1/predictions", {
@@ -174,7 +188,7 @@ const generateWithReplicate = async (
     body: JSON.stringify({
       version: model.includes(':') ? model.split(':')[1] : undefined,
       input: {
-        prompt: buildPrompt(request),
+        prompt: prompt,
         aspect_ratio: aspectRatio,
       },
     }),

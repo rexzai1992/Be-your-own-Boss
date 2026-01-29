@@ -22,7 +22,7 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight animate-fade-in-up delay-100">
-          Be Your Own <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Boss.</span>
+          Create Your Own <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Business.</span>
         </h1>
 
         <p className="text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up delay-200">

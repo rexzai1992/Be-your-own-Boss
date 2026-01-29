@@ -1,17 +1,145 @@
-import React from 'react';
-import { Download, RefreshCw, ArrowRight } from 'lucide-react';
-import { AppStatus } from '../types';
+import React, { useState } from 'react';
+import { Download, RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText } from 'lucide-react';
+import { AppStatus, AppSettings } from '../types';
 
 interface ResultCardProps {
   status: AppStatus;
   resultUrl: string | null;
   onReset: () => void;
+  settings: AppSettings;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) => {
-  
+const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, settings }) => {
   const PROMO_URL = "https://aigenius.com.my";
   const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&format=svg&data=${encodeURIComponent(PROMO_URL)}`;
+  const PROXY_URL = "https://corsproxy.io/?";
+
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  
+  // Use message from settings, fallback to a sensible default if somehow missing
+  const [whatsappMessage, setWhatsappMessage] = useState(
+    settings.whatsappMessageTemplate || 
+    `Hello! Here is your generated CEO Cartoon. You can view your result and start your business journey at ${PROMO_URL}. Thank you!`
+  );
+  
+  const [sending, setSending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const uploadToTmpFiles = async (base64Image: string): Promise<string> => {
+      // 1. Convert Base64 to Blob
+      const res = await fetch(base64Image);
+      const blob = await res.blob();
+      
+      const formData = new FormData();
+      // Use timestamp to ensure unique filename and avoid proxy caching
+      const filename = `ceo-cartoon-${Date.now()}.png`;
+      formData.append('file', blob, filename);
+      
+      // 2. Upload to TmpFiles.org (Free, no key) via Proxy
+      const targetUrl = 'https://tmpfiles.org/api/v1/upload';
+      const proxyUrl = `${PROXY_URL}${targetUrl}`;
+      
+      const response = await fetch(proxyUrl, {
+          method: 'POST',
+          body: formData
+          // Note: Do NOT set Content-Type header manually, let fetch set the boundary
+      });
+
+      if (!response.ok) throw new Error("Temporary host upload failed");
+      
+      const data = await response.json();
+      if (data.status !== 'success') throw new Error("Host returned error status");
+      
+      // 3. Convert to Direct Link
+      // TmpFiles returns: https://tmpfiles.org/12345/image.png
+      // Direct link is:   https://tmpfiles.org/dl/12345/image.png
+      return data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!phoneNumber) return;
+    
+    // Check if configuration exists
+    if (!settings.whatsappApiKey || !settings.whatsappSender) {
+        alert("WhatsApp API is not configured in Admin Settings.");
+        return;
+    }
+
+    setSending(true);
+    setStatusMessage("Preparing...");
+
+    try {
+        let finalImageUrl = resultUrl;
+        let isMediaSupported = resultUrl && resultUrl.startsWith('http');
+
+        // Check if we need to upload Base64 first
+        if (resultUrl && resultUrl.startsWith('data:')) {
+            try {
+                setStatusMessage("Uploading temp image...");
+                finalImageUrl = await uploadToTmpFiles(resultUrl);
+                isMediaSupported = true; // Now we have a public URL
+            } catch (err) {
+                console.error("Image host upload failed, falling back to text", err);
+                isMediaSupported = false;
+            }
+        }
+
+        const targetUrl = isMediaSupported 
+            ? 'https://ustazai.my/send-media'
+            : 'https://ustazai.my/send-message';
+            
+        // Use proxy if enabled in settings to bypass CORS
+        const finalUrl = settings.useCorsProxy ? `${PROXY_URL}${targetUrl}` : targetUrl;
+
+        const messageText = whatsappMessage;
+
+        // Construct body based on API type
+        const body = isMediaSupported ? {
+            api_key: settings.whatsappApiKey,
+            sender: settings.whatsappSender,
+            number: phoneNumber,
+            media_type: 'image',
+            caption: messageText,
+            url: finalImageUrl
+        } : {
+            api_key: settings.whatsappApiKey,
+            sender: settings.whatsappSender,
+            number: phoneNumber,
+            message: messageText
+        };
+
+        setStatusMessage("Sending to WhatsApp...");
+
+        const response = await fetch(finalUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            const successMsg = isMediaSupported 
+                ? "Image sent successfully!" 
+                : "Text sent successfully! (Note: Image was skipped because temporary upload failed)";
+            alert(successMsg);
+            setShowPhoneInput(false);
+            setPhoneNumber('');
+        } else {
+            console.error(data);
+            alert(`Failed to send message: ${data.message || JSON.stringify(data) || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error("WhatsApp Send Error:", error);
+        alert("Failed to connect to messaging server (CORS/Network Error). Ensure 'Use CORS Proxy' is enabled in settings.");
+    } finally {
+        setSending(false);
+        setStatusMessage("");
+    }
+  };
 
   if (status === AppStatus.IDLE) {
     return (
@@ -62,8 +190,73 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) =
   }
 
   return (
-    <div className="flex flex-col lg:flex-row bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-2xl animate-fade-in min-h-[700px]">
+    <div className="relative flex flex-col lg:flex-row bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-2xl animate-fade-in min-h-[700px]">
       
+      {/* Phone Number Modal Overlay */}
+      {showPhoneInput && (
+        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                   <h3 className="font-bold text-gray-800">Send to WhatsApp</h3>
+                   <button onClick={() => setShowPhoneInput(false)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+                       <X size={20} />
+                   </button>
+               </div>
+               
+               <div className="p-6 overflow-y-auto">
+                   <label className="block text-sm font-medium text-gray-700 mb-2">Recipient Phone Number</label>
+                   <div className="relative mb-5">
+                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                           <Phone size={18} className="text-gray-400" />
+                       </div>
+                       <input 
+                         type="tel" 
+                         value={phoneNumber}
+                         onChange={(e) => setPhoneNumber(e.target.value)}
+                         placeholder="e.g. 60123456789"
+                         autoFocus
+                         className="block w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-green-500 focus:border-green-500 transition-colors"
+                       />
+                       <p className="text-xs text-gray-400 mt-1.5">
+                          Must include country code (e.g. 60 for Malaysia).
+                       </p>
+                   </div>
+                   
+                   <label className="block text-sm font-medium text-gray-700 mb-2">Message Caption</label>
+                   <div className="relative mb-6">
+                       <div className="absolute top-3 left-3 pointer-events-none text-gray-400">
+                           <FileText size={18} />
+                       </div>
+                       <textarea 
+                         value={whatsappMessage}
+                         onChange={(e) => setWhatsappMessage(e.target.value)}
+                         className="block w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-green-500 focus:border-green-500 transition-colors text-sm min-h-[100px] resize-none"
+                         placeholder="Enter your message..."
+                       />
+                   </div>
+                   
+                   <button 
+                     onClick={handleSendWhatsApp}
+                     disabled={sending || !phoneNumber}
+                     className="w-full py-3 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#20bd5a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                   >
+                     {sending ? (
+                         <>
+                           <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                           {statusMessage || 'Sending...'}
+                         </>
+                     ) : (
+                         <>
+                           <Send size={18} />
+                           Send Message
+                         </>
+                     )}
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
+
       {/* Left Column: Image Preview */}
       <div className="flex-[3] bg-gray-900 relative flex items-center justify-center p-4 lg:p-8 overflow-hidden group">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20" />
@@ -92,6 +285,15 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset }) =
 
         {/* Primary Actions (Save) */}
         <div className="space-y-3 mb-8">
+           
+           <button 
+             onClick={() => setShowPhoneInput(true)}
+             className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] text-white font-bold text-lg rounded-xl hover:bg-[#20bd5a] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+           >
+             <MessageCircle size={24} className="fill-current" />
+             Send to WhatsApp
+           </button>
+
            <div className="grid grid-cols-[1fr_auto] gap-3">
             <a
               href={resultUrl || '#'}

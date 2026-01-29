@@ -29,6 +29,10 @@ export interface AppSettings {
   model: string;
   aspectRatio: AspectRatio;
   useCorsProxy: boolean;
+  promptTemplate: string;
+  whatsappApiKey: string;
+  whatsappSender: string;
+  whatsappMessageTemplate: string;
 }
 
 export type AppView = 'LANDING' | 'APP';

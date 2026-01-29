@@ -6,7 +6,8 @@ import ResultCard from './components/ResultCard';
 import AdminDashboard from './components/AdminDashboard';
 import Hero from './components/Hero';
 import VirtualKeyboard from './components/VirtualKeyboard';
-import { generateCartoonImage } from './services/aiService';
+import SupportButton from './components/SupportButton';
+import { generateCartoonImage, DEFAULT_PROMPT_TEMPLATE } from './services/aiService';
 import { AppStatus, CartoonRequest, ImageFile, AppSettings, AppView } from './types';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -14,7 +15,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   apiKey: '',
   model: 'gemini-2.5-flash-image',
   aspectRatio: '1:1',
-  useCorsProxy: true
+  useCorsProxy: true,
+  promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+  whatsappApiKey: 'GcCqTlEjxghF7MHtaxCwBeN1NX3ud7',
+  whatsappSender: '',
+  whatsappMessageTemplate: 'Hello! Here is your generated CEO Cartoon. You can view your result and start your business journey at https://aigenius.com.my. Thank you!'
 };
 
 const BUSINESS_TYPES = [
@@ -62,7 +67,9 @@ function App() {
       const saved = localStorage.getItem('ceo_cartoonizer_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return { ...DEFAULT_SETTINGS, ...parsed };
+        // Ensure new fields are populated if they didn't exist in old saves
+        // Force the hardcoded API key to ensure it is always used, overriding legacy local storage data
+        return { ...DEFAULT_SETTINGS, ...parsed, whatsappApiKey: DEFAULT_SETTINGS.whatsappApiKey };
       }
       return DEFAULT_SETTINGS;
     } catch (e) {
@@ -71,8 +78,10 @@ function App() {
   });
 
   const handleSettingsSave = (newSettings: AppSettings) => {
-    setSettings(newSettings);
-    localStorage.setItem('ceo_cartoonizer_settings', JSON.stringify(newSettings));
+    // Ensure we don't accidentally lose the API key if the admin dashboard sends back something else
+    const safeSettings = { ...newSettings, whatsappApiKey: DEFAULT_SETTINGS.whatsappApiKey };
+    setSettings(safeSettings);
+    localStorage.setItem('ceo_cartoonizer_settings', JSON.stringify(safeSettings));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -522,6 +531,9 @@ function App() {
         onSave={handleSettingsSave}
       />
 
+      {/* Support Button - Hides when keyboard is open to prevent overlap */}
+      <SupportButton isKeyboardOpen={isKeyboardOpen} settings={settings} />
+
       {/* Virtual Keyboard */}
       <VirtualKeyboard
         isVisible={isKeyboardOpen}
@@ -541,7 +553,7 @@ function App() {
             // WIDENED CONTAINER FOR SPLIT RESULT VIEW
             <div className="max-w-6xl mx-auto animate-fade-in">
                 {/* Result View - Full Page */}
-                <ResultCard status={status} resultUrl={resultUrl} onReset={handleReset} />
+                <ResultCard status={status} resultUrl={resultUrl} onReset={handleReset} settings={settings} />
             </div>
           ) : (
              <div className="max-w-2xl mx-auto">
