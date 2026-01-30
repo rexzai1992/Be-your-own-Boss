@@ -82,6 +82,15 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
         {/* Hero Image: Clean Photo Display with CTA Inside */}
         <div className="mt-8 relative w-full max-w-[320px] md:max-w-[800px] mx-auto animate-fade-in-up delay-300 flex justify-center pb-8">
            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white transform hover:scale-[1.01] transition-transform duration-500 group">
+              
+              {/* Young CEO Badge Overlay */}
+              <div className="absolute top-6 left-6 z-20 animate-fade-in-down pointer-events-none">
+                  <div className="bg-black/30 backdrop-blur-md border border-white/20 shadow-2xl px-4 py-2 rounded-full flex items-center gap-2">
+                      <Crown size={16} className="text-yellow-400 fill-current drop-shadow-sm" />
+                      <span className="font-bold text-white text-xs tracking-widest uppercase">Young CEO</span>
+                  </div>
+              </div>
+
               <img 
                 src="https://i.ibb.co/vvrCwdQY/Untitled-design.jpg" 
                 alt="Future CEO"

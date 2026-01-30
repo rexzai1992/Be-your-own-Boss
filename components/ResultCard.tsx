@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText } from 'lucide-react';
+import { RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText, Crown } from 'lucide-react';
 import { AppStatus, AppSettings, CartoonRequest } from '../types';
 import VirtualKeyboard from './VirtualKeyboard';
 
@@ -300,6 +300,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
       {/* Left Column: Image Preview */}
       <div className="flex-[3] bg-gray-900 relative flex items-center justify-center p-4 lg:p-8 overflow-hidden group">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20" />
+        
+        {/* NOTE: Badge removed per user request */}
+
         {resultUrl && (
           <img 
             src={resultUrl} 
