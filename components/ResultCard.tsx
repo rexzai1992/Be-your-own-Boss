@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText } from 'lucide-react';
+import { RefreshCw, ArrowRight, MessageCircle, Phone, X, Send, FileText } from 'lucide-react';
 import { AppStatus, AppSettings, CartoonRequest } from '../types';
 import VirtualKeyboard from './VirtualKeyboard';
 
@@ -18,7 +18,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
   const PROXY_URL = "https://corsproxy.io/?";
 
   const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // Initialize with '6' as mandatory prefix
+  const [phoneNumber, setPhoneNumber] = useState('6');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
   // Initialize message with variable replacement
@@ -72,7 +73,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
   };
 
   const handleSendWhatsApp = async () => {
-    if (!phoneNumber) return;
+    // Check if number is valid (at least 6 + some digits)
+    if (!phoneNumber || phoneNumber.length < 5) {
+        alert("Please enter a valid phone number");
+        return;
+    }
     
     // Check if configuration exists
     if (!settings.whatsappApiKey || !settings.whatsappSender) {
@@ -142,7 +147,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
                 : "Text sent successfully! (Note: Image was skipped because temporary upload failed)";
             alert(successMsg);
             setShowPhoneInput(false);
-            setPhoneNumber('');
+            setPhoneNumber('6'); // Reset to mandatory prefix
         } else {
             console.error(data);
             alert(`Failed to send message: ${data.message || JSON.stringify(data) || 'Unknown error'}`);
@@ -157,9 +162,19 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
   };
 
   const openWhatsAppModal = () => {
+      if (!phoneNumber.startsWith('6')) setPhoneNumber('6');
       setShowPhoneInput(true);
       // Automatically open keyboard slightly after modal opens
       setTimeout(() => setIsKeyboardOpen(true), 100);
+  };
+
+  const handlePhoneNumberChange = (val: string) => {
+      // Enforce leading '6'
+      if (val === '' || !val.startsWith('6')) {
+          setPhoneNumber('6');
+      } else {
+          setPhoneNumber(val);
+      }
   };
 
   if (status === AppStatus.IDLE) {
@@ -185,8 +200,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
               <span className="text-2xl animate-pulse">🎨</span>
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Creating Masterpiece...</h3>
-          <p className="text-gray-500 max-w-sm mx-auto text-lg">Our AI is applying the final touches to your business scene.</p>
+          <h3 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Creating Masterpiece for Boss {request.personName}</h3>
         </div>
       </div>
     );
@@ -244,12 +258,12 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
                        />
                    </div>
                    <p className="text-xs text-gray-500 mb-6">
-                      * Must include country code (e.g. 60 for Malaysia).
+                      * Country code 60 is required and automatically added.
                    </p>
                    
                    <button 
                      onClick={handleSendWhatsApp}
-                     disabled={sending || !phoneNumber}
+                     disabled={sending || phoneNumber.length < 5}
                      className="w-full py-4 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#20bd5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5"
                    >
                      {sending ? (
@@ -272,7 +286,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
              isVisible={isKeyboardOpen}
              mode="numeric"
              value={phoneNumber}
-             onChange={setPhoneNumber}
+             onChange={handlePhoneNumberChange}
              onClose={() => setIsKeyboardOpen(false)}
              onEnter={handleSendWhatsApp}
              title="Enter Phone Number"
@@ -303,13 +317,15 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Generation Complete
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-3 leading-tight">Your CEO Persona</h2>
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-3 leading-tight capitalize">
+            {request.businessName || 'Business'} By {request.personName || 'CEO'}
+          </h2>
           <p className="text-gray-500">
-            Download your new look or start your business journey.
+            Send your new look to WhatsApp or start your business journey.
           </p>
         </div>
 
-        {/* Primary Actions (Save) */}
+        {/* Primary Actions (Send & Reset) */}
         <div className="space-y-3 mb-8">
            
            <button 
@@ -320,24 +336,13 @@ const ResultCard: React.FC<ResultCardProps> = ({ status, resultUrl, onReset, set
              Send to WhatsApp
            </button>
 
-           <div className="grid grid-cols-[1fr_auto] gap-3">
-            <a
-              href={resultUrl || '#'}
-              download="ceo-cartoon.png"
-              className="flex items-center justify-center gap-2 px-4 py-4 bg-gray-900 text-white font-bold text-lg rounded-xl hover:bg-black transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-            >
-              <Download size={20} />
-              Save Image
-            </a>
-            
-            <button
+           <button
               onClick={onReset}
-              className="px-5 py-4 bg-white border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
-              title="Create New"
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-gray-200 text-gray-600 font-bold text-lg rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
             >
-              <RefreshCw size={24} />
+              <RefreshCw size={20} />
+              Create New
             </button>
-           </div>
         </div>
 
         {/* CTA Section - "At last" */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Briefcase, Sparkles, Settings } from 'lucide-react';
+import { Sparkles, Settings } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -9,15 +9,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
-            <Briefcase size={24} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-none">CEO Maker</h1>
-            <p className="text-xs text-gray-500 font-medium">Powered by Ai Genius</p>
-          </div>
-        </div>
+        <a 
+          href="https://aigenius.com.my" 
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <img 
+            src="https://i.ibb.co/kVN6QFT9/aigenius-finallogo-aug2025-ai-1.png" 
+            alt="AiGenius" 
+            className="h-10 md:h-12 w-auto object-contain"
+          />
+        </a>
         <div className="flex items-center gap-3">
           <button 
             onClick={onOpenSettings}

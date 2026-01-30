@@ -11,6 +11,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, onImageChange }) =
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -20,6 +21,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, onImageChange }) =
       }
     };
   }, [stream]);
+
+  // Timer Effect
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(prev => (prev !== null ? prev - 1 : null));
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      // Capture when countdown hits 0
+      capturePhoto();
+    }
+  }, [countdown]);
 
   const startCamera = async () => {
     try {
@@ -44,6 +60,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, onImageChange }) =
       setStream(null);
     }
     setIsCameraOpen(false);
+    setCountdown(null);
+  };
+
+  const startCountdown = () => {
+    setCountdown(3);
   };
 
   const capturePhoto = () => {
@@ -79,26 +100,59 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, onImageChange }) =
   // If camera is open, show video feed
   if (isCameraOpen) {
     return (
-      <div className="relative rounded-xl overflow-hidden bg-black aspect-[3/4] flex flex-col">
+      <div className="relative rounded-xl overflow-hidden bg-black aspect-[3/4] flex flex-col group">
         <video 
           ref={videoRef} 
           autoPlay 
           playsInline 
           className="w-full h-full object-cover transform -scale-x-100" 
         />
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
+        
+        {/* Face Overlay Guide */}
+        {countdown === null && (
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden">
+                {/* Instruction Text */}
+                <div className="absolute top-8 left-0 right-0 text-center z-20">
+                    <span className="bg-black/60 text-white text-sm font-semibold px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
+                        Position face in oval
+                    </span>
+                </div>
+
+                {/* Oval with Shadow Overlay */}
+                <div className="w-[60%] aspect-[3/4] max-w-[260px] border-4 border-white/50 border-dashed rounded-[50%] shadow-[0_0_0_2000px_rgba(0,0,0,0.6)] relative">
+                    {/* Optional Crosshairs */}
+                    <div className="absolute top-1/2 left-4 right-4 h-px bg-white/20" />
+                    <div className="absolute left-1/2 top-4 bottom-4 w-px bg-white/20" />
+                </div>
+            </div>
+        )}
+
+        {/* Countdown Overlay */}
+        {countdown !== null && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 backdrop-blur-sm transition-all duration-300">
+                <div className="text-9xl font-black text-white drop-shadow-2xl animate-pulse scale-110">
+                    {countdown > 0 ? countdown : '📸'}
+                </div>
+            </div>
+        )}
+
+        {/* Controls */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between z-30">
           <button 
             onClick={stopCamera}
-            className="p-3 text-white bg-white/10 rounded-full backdrop-blur-md"
+            className="p-3 text-white bg-white/10 rounded-full backdrop-blur-md hover:bg-white/20 transition-colors"
           >
             <X size={24} />
           </button>
+          
           <button 
-            onClick={capturePhoto}
-            className="w-16 h-16 rounded-full border-4 border-white bg-transparent flex items-center justify-center relative hover:bg-white/20 transition-colors"
+            onClick={startCountdown}
+            disabled={countdown !== null}
+            className="w-20 h-20 rounded-full border-4 border-white bg-transparent flex items-center justify-center relative hover:bg-white/10 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="w-12 h-12 bg-white rounded-full" />
+             <div className="w-16 h-16 bg-white rounded-full transition-transform" />
           </button>
+          
           <div className="w-12" /> {/* Spacer for centering */}
         </div>
       </div>

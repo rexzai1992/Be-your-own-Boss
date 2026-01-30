@@ -164,9 +164,9 @@ function App() {
           <div className="space-y-6 animate-fade-in-up">
             <div>
               <label htmlFor="personName" className="block text-xl font-bold text-gray-900 mb-2">
-                What's your full name?
+                Your Name?
               </label>
-              <p className="text-gray-500 text-sm mb-6">This will be the CEO of the company.</p>
+              <p className="text-gray-500 text-sm mb-6"></p>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <User className="h-6 w-6 text-gray-400" />
@@ -180,7 +180,7 @@ function App() {
                   onFocus={() => { setActiveField('personName'); setIsKeyboardOpen(true); }}
                   autoFocus
                   className="block w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-lg transition-colors"
-                  placeholder="e.g. Sarah Johnson"
+                  placeholder="e.g. The Boss"
                   onKeyDown={(e) => e.key === 'Enter' && formData.personName && handleNext()}
                 />
               </div>
@@ -249,7 +249,7 @@ function App() {
           <div className="space-y-6 animate-fade-in-up">
             <div>
               <label htmlFor="businessName" className="block text-xl font-bold text-gray-900 mb-2">
-                What's your business name?
+                Your Business Name?
               </label>
               <p className="text-gray-500 text-sm mb-6">We'll put this on the storefront signage.</p>
               <div className="relative">
@@ -292,7 +292,7 @@ function App() {
           <div className="space-y-6 animate-fade-in-up">
             <div>
               <label htmlFor="businessType" className="block text-xl font-bold text-gray-900 mb-2">
-                What type of business is it?
+                Your Dream Business?
               </label>
               <p className="text-gray-500 text-sm mb-6">Select a category or enter your own.</p>
               
@@ -369,7 +369,7 @@ function App() {
           <div className="space-y-6 animate-fade-in-up">
             <div>
               <label className="block text-xl font-bold text-gray-900 mb-2">
-                Choose a Concept
+                Your Concept
               </label>
               <p className="text-gray-500 text-sm mb-6">What vibe should the illustration have?</p>
               
@@ -445,7 +445,7 @@ function App() {
         return (
           <div className="space-y-6 animate-fade-in-up">
              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Snap Your Photo</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Generate Magic</h3>
                 <p className="text-gray-500 text-sm mb-6">We need a clear selfie for the character.</p>
                 <ImageUploader image={image} onImageChange={setImage} />
              </div>
